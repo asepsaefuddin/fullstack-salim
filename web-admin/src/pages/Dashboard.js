@@ -24,9 +24,6 @@ const deepEqual = (a, b) => {
   return true;
 };
 
-// -------------------------------------------------------------------
-// Local-storage cache keys
-// -------------------------------------------------------------------
 const CACHE_KEYS = {
   ITEMS: 'dashboard_cached_items',
   EMPLOYEES: 'dashboard_cached_employees',
