@@ -9,18 +9,16 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import CreateTask from './pages/CreateTask';
 import './index.css';
-import { login } from './/api';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Check if already logged in (e.g., from localStorage)
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
+
     if (token && savedUser) {
       setIsAuthenticated(true);
       setUser(JSON.parse(savedUser));
@@ -28,29 +26,15 @@ function App() {
     setLoading(false);
   }, []);
 
-  // const handleLogin = async (userData) => {
-  //   try {
-  //     const response = await login(userData.email, userData.password);
-  //     if (response.status === "success") {
-  //       setIsAuthenticated(true);
-  //       setUser(response.data); // Should include role: "admin"
-  //       localStorage.setItem('token', response.data.token || "dummy-token");
-  //       localStorage.setItem('user', JSON.stringify(response.data));
-  //     }
-  //   } catch (error) {
-  //     console.error("Login failed:", error);
-  //     alert("Invalid email or password");
-  //   }
-  // };
-
+  // Dummy admin login
   const handleLogin = (userData) => {
-    if (userData && userData.role === "admin") {
+    if (userData?.role === 'admin') {
       setIsAuthenticated(true);
       setUser(userData);
       localStorage.setItem('token', 'dummy-admin-token');
       localStorage.setItem('user', JSON.stringify(userData));
     } else {
-      setError("You must be an admin to access this dashboard");
+      alert('You must be an admin to access this dashboard');
     }
   };
 
@@ -62,14 +46,18 @@ function App() {
   };
 
   const AdminRoute = ({ element }) => {
-    if (!isAuthenticated) return <Navigate to="/login" />;
-    if (user?.role !== "admin") return <Navigate to="/login" />;
+    if (!isAuthenticated || user?.role !== 'admin') {
+      return <Navigate to="/login" replace />;
+    }
     return element;
   };
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: '100vh' }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -84,13 +72,15 @@ function App() {
           <Sidebar user={user} onLogout={handleLogout} />
           <div className="flex-grow-1 overflow-auto" style={{ height: '100vh' }}>
             <Routes>
-              <Route path="/login" element={<Login onLogin={handleLogin} />} />
               <Route path="/" element={<AdminRoute element={<Dashboard />} />} />
               <Route path="/items" element={<AdminRoute element={<Items />} />} />
               <Route path="/employees" element={<AdminRoute element={<Employees />} />} />
               <Route path="/history" element={<AdminRoute element={<History />} />} />
               <Route path="/tasks" element={<AdminRoute element={<CreateTask />} />} />
-              <Route path="/settings" element={<AdminRoute element={<Settings user={user} />} />} />
+              <Route
+                path="/settings"
+                element={<AdminRoute element={<Settings user={user} />} />}
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

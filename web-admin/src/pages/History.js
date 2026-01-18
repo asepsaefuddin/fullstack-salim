@@ -40,7 +40,7 @@ const CACHE_KEY = 'history_cached_data';
 
 const History = () => {
   const [history, setHistory] = useState([]);
-  const [items, setItems] = useState([]); // 🔑 Tambah state untuk items
+  // const [items, setItems] = useState([]); // 🔑 Tambah state untuk items
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -279,19 +279,19 @@ const History = () => {
   // ---------------------------------------------------------------
   // Load items data
   // ---------------------------------------------------------------
-  useEffect(() => {
-    const loadItemsData = async () => {
-      try {
-        const itemsData = await getItems();
-        setItems(Array.isArray(itemsData) ? itemsData : []);
-        console.log('✅ Items loaded:', itemsData);
-      } catch (err) {
-        console.error('❌ Failed to load items:', err);
-      }
-    };
+  // useEffect(() => {
+  //   const loadItemsData = async () => {
+  //     try {
+  //       const itemsData = await getItems();
+  //       setItems(Array.isArray(itemsData) ? itemsData : []);
+  //       console.log('✅ Items loaded:', itemsData);
+  //     } catch (err) {
+  //       console.error('❌ Failed to load items:', err);
+  //     }
+  //   };
     
-    loadItemsData();
-  }, []);
+  //   loadItemsData();
+  // }, []);
 
   // ---------------------------------------------------------------
   // Table columns

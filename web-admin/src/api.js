@@ -533,19 +533,19 @@ export const getLowStockThreshold = async () => {
   return data[0];
 };
 
-// Cache key for configuration settings
-const CONFIG_CACHE_KEY = 'app_config_cache';
+// // Cache key for configuration settings
+// const CONFIG_CACHE_KEY = 'app_config_cache';
 
-// Save configuration to cache
-const saveConfigToCache = (config) => {
-  localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(config));
-};
+// // Save configuration to cache
+// const saveConfigToCache = (config) => {
+//   localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(config));
+// };
 
-// Load configuration from cache
-const loadConfigFromCache = () => {
-  const cachedConfig = localStorage.getItem(CONFIG_CACHE_KEY);
-  return cachedConfig ? JSON.parse(cachedConfig) : null;
-};
+// // Load configuration from cache
+// const loadConfigFromCache = () => {
+//   const cachedConfig = localStorage.getItem(CONFIG_CACHE_KEY);
+//   return cachedConfig ? JSON.parse(cachedConfig) : null;
+// };
 
 // Export supabase for use in other files if needed
 export { supabase };
