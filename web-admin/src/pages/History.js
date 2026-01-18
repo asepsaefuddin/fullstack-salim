@@ -11,7 +11,7 @@ import {
   Badge,
   Spinner,
 } from 'react-bootstrap';
-import { getHistory, updateHistory, deleteHistory, getItems } from '../api';
+import { getHistory, updateHistory, deleteHistory, getItems, updateItem } from '../api';
 import DataTable from '../components/DataTable';
 
 // -------------------------------------------------------------------
@@ -40,13 +40,13 @@ const CACHE_KEY = 'history_cached_data';
 
 const History = () => {
   const [history, setHistory] = useState([]);
-  // const [items, setItems] = useState([]); // 🔑 Tambah state untuk items
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
   const [editForm, setEditForm] = useState({ qty: '', action: '' });
+  const [currentItemStock, setCurrentItemStock] = useState(0); // 🔑 Tambah state untuk current stock
   const [filter, setFilter] = useState({
     from: '',
     to: '',
@@ -189,12 +189,26 @@ const History = () => {
   // ---------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------
-  const handleEdit = (entry) => {
+  const handleEdit = async (entry) => {
     setEditEntry(entry);
+    // 🔑 Untuk deduct: ambil qty, untuk action lain: ambil stock_after
+    const valueToEdit = entry.action === 'deduct' ? entry.qty : entry.stock_after;
     setEditForm({
-      qty: entry.stock_after, // 🔑 Ambil dari stock_after, bukan qty
+      qty: valueToEdit,
       action: entry.action,
     });
+    
+    // 🔑 Fetch current stock dari items table
+    try {
+      const items = await getItems();
+      const currentItem = items.find(item => item.id === entry.item_id);
+      setCurrentItemStock(currentItem?.stock ?? 0);
+      console.log('[UI] Current item stock from items table:', currentItem?.stock);
+    } catch (err) {
+      console.error('[UI] Failed to fetch current item stock:', err);
+      setCurrentItemStock(0);
+    }
+    
     setShowEditModal(true);
   };
 
@@ -222,9 +236,16 @@ const History = () => {
   };
 
   const handleEditFormChange = (e) => {
+    let value = e.target.value;
+    
+    // 🔑 Validasi: qty tidak boleh negatif
+    if (e.target.name === 'qty' && Number(value) < 0) {
+      value = '0';
+    }
+    
     setEditForm((f) => ({
       ...f,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     }));
   };
 
@@ -237,28 +258,70 @@ const History = () => {
     console.log('[UI] Edit entry before:', editEntry);
 
     try {
-      // 🔑 Quantity field = stock_after
-      const newStockAfter = Number(editForm.qty);
+      const newValue = Number(editForm.qty);
       
-      console.log('[UI] Stock after updated:', {
-        oldStockAfter: editEntry.stock_after,
-        newStockAfter,
-      });
-
-      const result = await updateHistory({
+      const payload = {
         id: editEntry.id,
-        qty: newStockAfter, // 🔑 Kirim sebagai qty tapi akan diperlakukan sebagai stock_after
         action: editForm.action,
-        stock_after: newStockAfter,
-      });
+      };
 
-      console.log('[UI] Update success:', result);
+      if (editEntry.action === 'deduct') {
+        payload.qty = newValue;
+        console.log('[UI] Updating qty for deduct:', {
+          oldQty: editEntry.qty,
+          newQty: newValue,
+        });
+
+        await updateHistory(payload);
+        console.log('[UI] Update history success');
+
+        // 🔑 Logika diperbaiki: 
+        // Jika qty BERTAMBAH (lebih banyak dikeluarkan) → stok BERKURANG
+        // Jika qty BERKURANG (lebih sedikit dikeluarkan) → stok BERTAMBAH
+        const qtyDifference = editEntry.qty - newValue; // terbalik: old - new
+        const newItemStock = currentItemStock + qtyDifference;
+        
+        console.log('[UI] Updating item stock:', {
+          itemId: editEntry.item_id,
+          currentStock: currentItemStock,
+          oldQty: editEntry.qty,
+          newQty: newValue,
+          qtyDifference: qtyDifference,
+          newStock: newItemStock,
+          explanation: newValue > editEntry.qty 
+            ? 'Qty bertambah (lebih banyak dikeluarkan) → stok berkurang'
+            : 'Qty berkurang (lebih sedikit dikeluarkan) → stok bertambah'
+        });
+
+        try {
+          await updateItem({
+            id: editEntry.item_id,
+            stock: newItemStock,
+          });
+          console.log('[UI] Update item stock success');
+          
+          window.dispatchEvent(new Event('itemsUpdated'));
+        } catch (itemErr) {
+          console.error('[UI] Item update failed:', itemErr);
+          setError('History updated but item stock update failed. Please refresh items.');
+        }
+
+      } else {
+        payload.stock_after = newValue;
+        console.log('[UI] Updating stock_after:', {
+          oldStockAfter: editEntry.stock_after,
+          newStockAfter: newValue,
+        });
+
+        await updateHistory(payload);
+        console.log('[UI] Update history success');
+      }
 
       setShowEditModal(false);
       await refreshHistory();
     } catch (err) {
       console.error('[UI] Update failed:', err);
-      setError('Failed to update history entry');
+      setError('Failed to update history entry: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -633,50 +696,230 @@ const History = () => {
               padding: '2rem',
             }}
           >
-            <Form.Group className="mb-4">
-              <Form.Label style={{ fontWeight: 700, color: '#23272b' }}>Quantity</Form.Label>
-              <Form.Control
-                name="qty"
-                type="number"
-                value={editForm.qty}
-                onChange={handleEditFormChange}
-                required
-                disabled={loading}
-                style={{
+            {editEntry?.action === 'deduct' && (
+              <>
+                <div style={{
+                  background: '#fff3cd',
+                  border: '1px solid #ffc107',
                   borderRadius: 12,
-                  background: '#fff',
-                  fontSize: 16,
                   padding: '12px 16px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  border: 'none',
-                }}
-                className="hover-scale-input"
-              />
-              <Form.Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                💡 Nilai ini adalah stock_after yang akan diperbarui
-              </Form.Text>
-            </Form.Group>
+                  marginBottom: '1.5rem',
+                  fontSize: 13,
+                }}>
+                  <strong style={{ color: '#856404' }}>⚠️ Edit Deduct:</strong> Mengubah quantity akan mempengaruhi stok item
+                </div>
+
+                <Form.Group className="mb-4">
+                  <Form.Label style={{ fontWeight: 700, color: '#23272b', marginBottom: '0.5rem' }}>
+                    Quantity Saat Ini
+                  </Form.Label>
+                  <div style={{
+                    borderRadius: 12,
+                    background: '#f0f0f0',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    padding: '12px 16px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    border: '2px solid #ddd',
+                    color: '#333',
+                    fontFamily: 'monospace',
+                  }}>
+                    {editEntry?.qty ?? 0}
+                  </div>
+                  <Form.Text style={{ fontSize: 12, color: '#888', marginTop: 4, display: 'block' }}>
+                    📊 Jumlah barang yang dikeluarkan sebelum perubahan
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-4">
+                  <Form.Label style={{ fontWeight: 700, color: '#23272b', marginBottom: '0.5rem' }}>
+                    Quantity Dikeluarkan Baru
+                  </Form.Label>
+                  <Form.Control
+                    name="qty"
+                    type="number"
+                    min="0"
+                    value={editForm.qty}
+                    onChange={handleEditFormChange}
+                    required
+                    disabled={loading}
+                    style={{
+                      borderRadius: 12,
+                      background: '#fff',
+                      fontSize: 16,
+                      padding: '12px 16px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      border: '2px solid #007bff',
+                      fontWeight: 600,
+                    }}
+                    className="hover-scale-input"
+                  />
+                  <Form.Text style={{ fontSize: 12, color: '#888', marginTop: 4, display: 'block' }}>
+                    💡 Masukkan jumlah barang yang dikeluarkan (baru) - Minimum: 0
+                  </Form.Text>
+                </Form.Group>
+
+                {Number(editForm.qty) !== Number(editEntry?.qty) && (
+                  <div style={{
+                    background: '#e7f3ff',
+                    border: '2px solid #0d6efd',
+                    borderRadius: 12,
+                    padding: '16px',
+                    marginBottom: '1.5rem',
+                    fontSize: 13,
+                  }}>
+                    <strong style={{ color: '#004085', fontSize: 14 }}>📈 Preview Perubahan Stok:</strong>
+                    <div style={{ marginTop: 12, lineHeight: 1.8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8 }}>
+                        <span style={{ fontWeight: 600 }}>Qty Lama:</span>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#666' }}>
+                          {editEntry?.qty ?? 0}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8 }}>
+                        <span style={{ fontWeight: 600 }}>Qty Baru:</span>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0d6efd' }}>
+                          {editForm.qty || 0}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #0d6efd' }}>
+                        <span style={{ fontWeight: 600 }}>Selisih Qty:</span>
+                        <span style={{ 
+                          fontFamily: 'monospace', 
+                          fontWeight: 700,
+                          color: Number(editForm.qty) > Number(editEntry?.qty) ? '#dc3545' : '#198754'
+                        }}>
+                          {Number(editForm.qty) > Number(editEntry?.qty) ? '+' : ''}{Number(editForm.qty) - Number(editEntry?.qty)}
+                          <span style={{ fontSize: 11, marginLeft: 4 }}>
+                            {Number(editForm.qty) > Number(editEntry?.qty) ? '(lebih banyak dikeluarkan)' : '(lebih sedikit dikeluarkan)'}
+                          </span>
+                        </span>
+                      </div>
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <span style={{ fontWeight: 600 }}>Stok Item Saat Ini:</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                            {currentItemStock}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <span style={{ fontWeight: 600 }}>Perubahan Stok:</span>
+                          <span style={{ 
+                            fontFamily: 'monospace', 
+                            fontWeight: 700,
+                            color: Number(editForm.qty) > Number(editEntry?.qty) ? '#dc3545' : '#198754'
+                          }}>
+                            {Number(editForm.qty) > Number(editEntry?.qty) ? '-' : '+'}{Math.abs(Number(editForm.qty) - Number(editEntry?.qty))}
+                            <span style={{ fontSize: 11, marginLeft: 4 }}>
+                              {Number(editForm.qty) > Number(editEntry?.qty) ? '(stok berkurang)' : '(stok bertambah)'}
+                            </span>
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 600 }}>Stok Item Setelah Update:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#666' }}>
+                              {currentItemStock}
+                            </span>
+                            <span style={{ fontWeight: 700, color: '#666' }}>→</span>
+                            <span style={{ 
+                              fontFamily: 'monospace', 
+                              fontWeight: 700,
+                              color: Number(editForm.qty) > Number(editEntry?.qty) ? '#dc3545' : '#198754',
+                              fontSize: 16,
+                              padding: '4px 8px',
+                              background: Number(editForm.qty) > Number(editEntry?.qty) ? '#f8d7da' : '#d4edda',
+                              borderRadius: 6
+                            }}>
+                              {currentItemStock + (Number(editEntry?.qty) - Number(editForm.qty))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {editEntry?.action !== 'deduct' && (
+              <>
+                <Form.Group className="mb-4">
+                  <Form.Label style={{ fontWeight: 700, color: '#23272b', marginBottom: '0.5rem' }}>
+                    Stock Saat Ini
+                  </Form.Label>
+                  <div style={{
+                    borderRadius: 12,
+                    background: '#f0f0f0',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    padding: '12px 16px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    border: '2px solid #ddd',
+                    color: '#333',
+                    fontFamily: 'monospace',
+                  }}>
+                    {editEntry?.stock_after ?? 0}
+                  </div>
+                  <Form.Text style={{ fontSize: 12, color: '#888', marginTop: 4, display: 'block' }}>
+                    📊 Stok akhir sebelum perubahan
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-4">
+                  <Form.Label style={{ fontWeight: 700, color: '#23272b', marginBottom: '0.5rem' }}>
+                    Stock After Baru
+                  </Form.Label>
+                  <Form.Control
+                    name="qty"
+                    type="number"
+                    value={editForm.qty}
+                    onChange={handleEditFormChange}
+                    required
+                    disabled={loading}
+                    style={{
+                      borderRadius: 12,
+                      background: '#fff',
+                      fontSize: 16,
+                      padding: '12px 16px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      border: '2px solid #007bff',
+                      fontWeight: 600,
+                    }}
+                    className="hover-scale-input"
+                  />
+                  <Form.Text style={{ fontSize: 12, color: '#888', marginTop: 4, display: 'block' }}>
+                    💡 Masukkan nilai stok akhir (baru)
+                  </Form.Text>
+                </Form.Group>
+              </>
+            )}
+
             <Form.Group className="mb-4">
               <Form.Label style={{ fontWeight: 700, color: '#23272b' }}>Action</Form.Label>
               <Form.Control
                 name="action"
                 value={editForm.action ?? ''}
-  onChange={handleEditFormChange}
+                onChange={handleEditFormChange}
                 required
-                disabled={loading}
+                disabled={true}
                 style={{
                   borderRadius: 12,
-                  background: '#fff',
+                  background: '#f8fafd',
                   fontSize: 16,
                   padding: '12px 16px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                   border: 'none',
+                  color: '#888',
                 }}
                 className="hover-scale-input"
               />
+              <Form.Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                🔒 Action tidak dapat diubah
+              </Form.Text>
             </Form.Group>
             {columns
-              .filter((col) => !['qty', 'action'].includes(col.field))
+              .filter((col) => !['qty', 'action', 'stock_changes'].includes(col.field))
               .map((col) => (
                 <Form.Group className="mb-4" key={col.field}>
                   <Form.Label style={{ fontWeight: 700, color: '#23272b' }}>{col.header}</Form.Label>

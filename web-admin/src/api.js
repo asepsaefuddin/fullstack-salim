@@ -231,33 +231,46 @@ export const getHistory = async (params) => {
 };
 
 export const updateHistory = async (history) => {
-  const qty = Number(history.qty);
   const action =
     history.action !== null && history.action !== undefined
       ? String(history.action).trim()
       : '';
-  const stockAfter = history.stock_after !== undefined ? Number(history.stock_after) : null;
-
-  if (!Number.isInteger(qty)) {
-    throw new Error('INVALID_QTY');
-  }
 
   if (!action) {
     throw new Error('ACTION_EMPTY');
   }
 
-  // 🔑 Hanya update stock_after, qty tidak berubah di database
   const payload = {
     action,
   };
 
-  // 🔑 Tambah stock_after jika disediakan
-  if (stockAfter !== null) {
-    payload.stock_after = stockAfter;
-    console.log('[API] Updating stock_after:', stockAfter);
+  // 🔑 Untuk deduct: update qty (jumlah yang dikeluarkan)
+  if (history.action === 'deduct' && history.qty !== undefined) {
+    const qty = Number(history.qty);
+    if (!Number.isInteger(qty) || qty < 0) {
+      throw new Error('INVALID_QTY');
+    }
+    payload.qty = qty;
+    console.log('[API] Updating qty for deduct:', {
+      oldQty: history.oldQty,
+      newQty: qty,
+    });
   }
 
-  console.log('PATCH payload:', payload);
+  // 🔑 Untuk action lain (add/min): update stock_after
+  if (history.action !== 'deduct' && history.stock_after !== undefined) {
+    const stockAfter = Number(history.stock_after);
+    if (!Number.isInteger(stockAfter) || stockAfter < 0) {
+      throw new Error('INVALID_STOCK_AFTER');
+    }
+    payload.stock_after = stockAfter;
+    console.log('[API] Updating stock_after:', {
+      oldStockAfter: history.oldStockAfter,
+      newStockAfter: stockAfter,
+    });
+  }
+
+  console.log('[API] Update payload:', payload);
 
   const { data, error } = await supabase
     .from('history')
