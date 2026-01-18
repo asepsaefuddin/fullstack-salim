@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Aplikasi Gudang SMM",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "googleServicesFile": "./google-services.json",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio",
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.jethroelijah.mobile",
+      "useNextNotificationsApi": true,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "VIBRATE",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
+      "notification": {
+        "icon": "./assets/notification-icon.png",
+        "color": "#ffffff",
+        "sound": "ringtone"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e964b13b-18df-4a8d-82dc-df2808c5238c"
+      }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#ffffff",
+          "sounds": [
+            "./assets/ringtone.mp3"
+          ],
+          "mode": "production"
+        }
+      ]
+    ],
+    "owner": "swakarsa-builders"
+  }
+}

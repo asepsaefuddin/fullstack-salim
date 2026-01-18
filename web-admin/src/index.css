@@ -1,0 +1,249 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  overflow-x: hidden;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #343a40 0%, #212529 100%);
+  color: white;
+  padding: 20px 0;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+}
+
+.sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 0;
+  padding: 12px 24px;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar .nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: all 0.5s;
+}
+
+.sidebar .nav-link:hover::before {
+  left: 100%;
+}
+
+.sidebar .nav-link:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+}
+
+.sidebar .nav-link.active-link {
+  color: white;
+  background: linear-gradient(90deg, #0d6efd 0%, #0a58ca 100%);
+  border-left: 4px solid white;
+  box-shadow: inset 0 0 10px rgba(13,110,253,0.3);
+}
+
+.sidebar-header {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+}
+
+.sidebar-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+}
+
+.stats-card {
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  background: white;
+  position: relative;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.stats-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.stats-card:hover::before {
+  opacity: 1;
+}
+
+.stats-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.data-table-container {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.table th {
+  font-weight: 700;
+  background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #343a40;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+  padding: 15px;
+}
+
+.table-hover tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.08);
+  transform: scale(1.01);
+}
+
+.pagination .page-item .page-link {
+  border-radius: 50%;
+  margin: 0 5px;
+  transition: all 0.3s;
+  border: none;
+  background: #f8f9fa;
+}
+
+.pagination .page-item.active .page-link {
+  background: #0d6efd;
+  color: white;
+  transform: scale(1.1);
+}
+
+.active-link {
+  color: white !important;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+  border-left: 4px solid #0d6efd;
+  box-shadow: 0 0 15px rgba(13,110,253,0.2);
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.card:hover {
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  transform: translateY(-5px);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.low-stock-alert {
+  animation: pulse 2s infinite;
+}
+
+.empty-state-icon {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.dashboard-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(13,110,253,0.1) 0%, transparent 70%);
+  animation: rotateGradient 10s linear infinite;
+}
+
+@keyframes rotateGradient {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Additional CSS for Items.jsx */
+.custom-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.hover-scale {
+  transition: all 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+}
+
+.hover-scale-input {
+  transition: all 0.3s ease;
+}
+
+.hover-scale-input:focus {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(52,152,219,0.2) !important;
+  border-color: #0d6efd !important;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
